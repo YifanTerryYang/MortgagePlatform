@@ -1,0 +1,30 @@
+CORE_PEER_ADDRESS=peer:7051 CORE_CHAINCODE_ID_NAME=mortgage:0 ./mortgage
+
+CORE_PEER_ADDRESS=peer:7051 CORE_CHAINCODE_ID_NAME=account:0 ./mortgage
+
+
+peer chaincode install -p chaincodedev/chaincode/mortgage -n account -v 0
+
+peer chaincode instantiate -n account -v 0 -c '{"Args":["a","10"]}' -C myc
+
+peer chaincode invoke -n mortgage -c '{"Args":["set", "a", "20"]}' -C myc
+
+peer chaincode invoke -n mortgage -c '{"Args":["set", "a", "20"]}' -C myc
+
+// Create new user
+peer chaincode invoke -n account -c '{"Args":["createNewUser", "terry", "Wong", "123 goodyear, Brooklyn, NY 11214"]}' -C myc
+
+
+// getAccountsList
+peer chaincode invoke -n account -c '{"Args":["getAccountsList"]}' -C myc
+
+// helloWorld
+peer chaincode invoke -n account -c '{"Args":["helloWorld"]}' -C myc
+
+//findAccount
+peer chaincode invoke -n mortgage -c '{"Args":["findAccount","1"]}' -C myc
+
+// updateAccount
+peer chaincode invoke -n mortgage -c '{"Args":["updateAccount","1","Atonic","Cherry","111 hero pkwy, Tampa, FL 32232"]}' -C myc
+
+

@@ -1,0 +1,12 @@
+# ignore all file first
+*
+
+# unignore all files with extension
+!*.*
+
+# Unignore all dirs
+!*/
+tmp/
+
+#### Above combination with ignore all files without extension ####
+
