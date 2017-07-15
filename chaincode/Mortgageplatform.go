@@ -9,9 +9,24 @@ import (
 	sc "github.com/hyperledger/fabric/protos/peer"
 )
 
-type Mortgageplatform struct{}
+type Mortgageplatform struct{
+	//var assetsListkey, usersListkey, postedAssetsListkey string
+	assetsList, usersList, postedAssetsList []string
+}
 
 func (s *Mortgageplatform) Init(APIstub shim.ChaincodeStubInterface) sc.Response {
+	// init Assets list
+	//s.assetsListkey = "assetslist"
+	//s.assetsListval = make([]string,0,2000)
+	// init Users list
+	//s.usersListkey = "userslist"
+	//s.usersListval = make([]string,0,2000)
+	// init Posted assets list
+	//s.postedAssetsListkey = "postedassetslist"
+	//s.postedAssetsListval = make([]string,0,2000)
+
+	// Initialize "posted Asset" value.
+	APIstub.PutState("postedasset", []byte(""))
 	return shim.Success(nil)
 }
 

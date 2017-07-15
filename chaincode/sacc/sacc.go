@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"bytes"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
@@ -48,8 +49,12 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	var err error
 	if fn == "set" {
 		result, err = set(stub, args)
-	} else { // assume 'get' even if fn is nil
+	} else if fn == "get" { // assume 'get' even if fn is nil
 		result, err = get(stub, args)
+	} else if fn == "setpartcomkey" {
+		result, err = setpartcomkey(stub, args)
+	} else if fn == "getpartcomkey" {
+		result, err = getpartcomkey(stub, args)
 	}
 	if err != nil {
 		return shim.Error(err.Error())
@@ -57,6 +62,61 @@ func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 
 	// Return the result as success payload
 	return shim.Success([]byte(result))
+}
+
+func setpartcomkey(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	obtype := "type"
+	str := []string{"str", "yifan.terry.yang@gmail.com"}
+	key, _ := stub.CreateCompositeKey(obtype, str)
+	val := []byte("value for asset1")
+	stub.PutState(key, val)
+	str1 := []string{"str","y"}
+	key1, _ := stub.CreateCompositeKey(obtype,str1)
+	val1 := []byte("value1 for asset")
+	stub.PutState(key1,val1)
+
+	return "success", nil
+}
+
+func getpartcomkey(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	obtype := "type"
+	str := []string{"str"}
+	resultsIterator,err := stub.GetStateByPartialCompositeKey(obtype, str)
+	if err != nil {
+		return "",err
+	}
+	defer resultsIterator.Close()
+
+	// buffer is a JSON array containing QueryResults
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return "",err
+		}
+		// Add a comma before array members, suppress it for the first array member
+		if bArrayMemberAlreadyWritten == true {
+			buffer.WriteString(",")
+		}
+		buffer.WriteString("{\"Key\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(queryResponse.Key)
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"Record\":")
+		// Record is a JSON object, so we write as-is
+		buffer.WriteString(string(queryResponse.Value))
+		buffer.WriteString("}")
+		bArrayMemberAlreadyWritten = true
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- queryAllCars:\n%s\n", buffer.String())
+	
+	return buffer.String(), nil
 }
 
 // Set stores the asset (both key and value) on the ledger. If the key exists,

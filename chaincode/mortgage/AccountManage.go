@@ -1,11 +1,12 @@
 package main
 
 import(
+	"bytes"
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
+	"errors"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	sc "github.com/hyperledger/fabric/protos/peer"
 )
 
 func CheckUser(APIstub shim.ChaincodeStubInterface, username string) (bool, []byte) {
@@ -22,67 +23,69 @@ func CheckUser(APIstub shim.ChaincodeStubInterface, username string) (bool, []by
 	return false, nil
 }
 
-func CreateNewUser(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
+func createNewUser(APIstub shim.ChaincodeStubInterface, args []string) error {
 	if len(args) != 3 {
-		return shim.Error("Incorrect number of arguments. Expecting 3")
+		return errors.New("Incorrect number of arguments. Expecting 3")
 	}
 
 	username := args[0]
 	password := args[1]
-	if password == "" {return shim.Error("Password is empty")}
-	hashedPassword,_ := bcrypt.GenerateFromPassword([]byte(password), 10)
+	if password == "" {return errors.New("Password is empty")}
+	hashedPasswordAsbytes, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
 	userinfo := args[2]
 
 	// Check if user exists
 	check, _ := CheckUser(APIstub, username)
 	if check {   // if user exists
-		return shim.Error("User exist")
+		return errors.New("User exist")
 	}
 
 	compositeKey, _ := GetUserKey(APIstub, username)
 	userinfoEntity := UserInfo{}
 	json.Unmarshal([]byte(userinfo), &userinfoEntity)
-	newUser := User{Password: hashedPassword, Info: userinfoEntity}
+	newUser := User{Username: compositeKey, Password: hashedPasswordAsbytes, Info: userinfoEntity}
 	newUserByte, _ := json.Marshal(newUser)
 	if APIstub.PutState(compositeKey, newUserByte) != nil {
-		return shim.Error("Error on shim.PutState")
+		return errors.New("Error on shim.PutState")
 	}
-	return shim.Success(nil)
+	return nil
 }
 
-func Login(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
+// Will return user info after login successfully
+func login(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 2 {  // Should contain "username" and "password"
-		return shim.Error("Incorrect number of arguments. Expecting 2")
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
 	
 	username := args[0]
 	password := args[1]
-	if password == "" {return shim.Error("Password is empty")}
-	hashedPassword,_ := bcrypt.GenerateFromPassword([]byte(password), 10)
+	if password == "" {return nil, errors.New("Password is empty")}
+	hashedPasswordAsbytes,_ := bcrypt.GenerateFromPassword([]byte(password), 10)
 
 	// Check if user exists
 	check, userval := CheckUser(APIstub, username)
 	if !check {   // if user exists
-		return shim.Error("User not exists or password incorrect")
+		return nil, errors.New("User not exists or password incorrect")
 	}
 
 	user := User{}
 	json.Unmarshal(userval, &user)
-	userinfo, _ := json.Marshal(user.Info)
+	if bytes.Compare(hashedPasswordAsbytes, user.Password) != 0 {return nil, errors.New("User not exists or password incorrect")}
+	userinfoAsbytes, _ := json.Marshal(user.Info)
 
-	return shim.Success(userinfo)
+	return userinfoAsbytes, nil
 }
 
-func UpdateUser(APIstub shim.ChaincodeStubInterface, args []string) sc.Response {
+func updateUser(APIstub shim.ChaincodeStubInterface, args []string) error {
 	if len(args) != 2 {
-		return shim.Error("Incorrect number of arguments. Expecting 2")
+		return errors.New("Incorrect number of arguments. Expecting 2")
 	}
 	username := args[0]
 	usernewinfo := args[1]
 
 	check, useroldval := CheckUser(APIstub, username)
 	if !check {
-		return shim.Error("User not exist")
+		return errors.New("User not exist")
 	}
 	
 	olduserinfo := User{}
@@ -100,11 +103,11 @@ func UpdateUser(APIstub shim.ChaincodeStubInterface, args []string) sc.Response 
 	if newuserinfo.Addr.State != "" {olduserinfo.Info.Addr.State = newuserinfo.Addr.State}
 	if newuserinfo.Addr.Zip != "" {olduserinfo.Info.Addr.Zip = newuserinfo.Addr.Zip}
 
-	olduserinfoByte,_ := json.Marshal(olduserinfo)
+	olduserinfoByte,_ := json.Marshal(olduserinfo)  // convert to byte stream after update
 	userkey, err := GetUserKey(APIstub,username)
 	if APIstub.PutState(userkey, olduserinfoByte) != nil {
-		return shim.Error("Fail to update user info")
+		return errors.New("Fail to update user info" + err.Error())
 	}
 
-	return shim.Success(nil)
+	return nil
 }

@@ -3,13 +3,17 @@ CORE_PEER_ADDRESS=peer:7051 CORE_CHAINCODE_ID_NAME=mortgage:0 ./mortgage
 CORE_PEER_ADDRESS=peer:7051 CORE_CHAINCODE_ID_NAME=account:0 ./mortgage
 
 
+peer chaincode install -p chaincodedev/chaincode/sacc -n mortgage -v 0
+
 peer chaincode install -p chaincodedev/chaincode/mortgage -n account -v 0
 
-peer chaincode instantiate -n account -v 0 -c '{"Args":["a","10"]}' -C myc
+peer chaincode instantiate -n mortgage -v 0 -c '{"Args":["a","10"]}' -C myc
 
 peer chaincode invoke -n mortgage -c '{"Args":["set", "a", "20"]}' -C myc
 
-peer chaincode invoke -n mortgage -c '{"Args":["set", "a", "20"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["setpartcomkey", "a", "20"]}' -C myc
+
+peer chaincode invoke -n mortgage -c '{"Args":["getpartcomkey", "a", "20"]}' -C myc
 
 // Create new user
 peer chaincode invoke -n account -c '{"Args":["createNewUser", "terry", "Wong", "123 goodyear, Brooklyn, NY 11214"]}' -C myc
