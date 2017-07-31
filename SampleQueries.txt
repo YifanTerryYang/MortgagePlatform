@@ -5,9 +5,9 @@ CORE_PEER_ADDRESS=peer:7051 CORE_CHAINCODE_ID_NAME=account:0 ./mortgage
 
 peer chaincode install -p chaincodedev/chaincode/sacc -n mortgage -v 0
 
-peer chaincode install -p chaincodedev/chaincode/mortgage -n account -v 0
+peer chaincode install -p chaincodedev/chaincode/mortgage -n mortgage -v 0
 
-peer chaincode instantiate -n mortgage -v 0 -c '{"Args":["a","10"]}' -C myc
+peer chaincode instantiate -n mortgage -v 0 -c '{"Args":[]}' -C myc
 
 peer chaincode invoke -n mortgage -c '{"Args":["set", "a", "20"]}' -C myc
 
@@ -32,3 +32,17 @@ peer chaincode invoke -n mortgage -c '{"Args":["findAccount","1"]}' -C myc
 peer chaincode invoke -n mortgage -c '{"Args":["updateAccount","1","Atonic","Cherry","111 hero pkwy, Tampa, FL 32232"]}' -C myc
 
 
+
+
+/**************** mortgage test code ********************/
+// create new user
+peer chaincode invoke -n mortgage -c '{"Args":["createnewuser", "terry@yang.com", "yangyifan","{\"fname\":\"yifan\", \"lname\":\"yang\", \"gender\":\"male\"}"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["login", "terry@yang.com", "yangyifan"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["getuserinfo","terry@yang.com"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["getpostedassets"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["updateuser","terry@yang.com", "{\"fname\":\"Terry\",\"lname\":\"Yang\",\"gender\":\"Male\",\"addr\":{\"addr1\":\"1648 80th STREET\",\"addr2\":\"2R\",\"apt\":\"2R\",\"city\":\"Brooklyn\",\"state\":\"NEW YORK\",\"zip\":\"11214\"},\"money\":0,\"assetlist\":\"\",\"paymentmethodlist\":null}"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["addasset", "terry@yang.com", "7654321", "{\"desc\":\"This is another test asset for terry@yang.com\"}"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["postasset", "terry@yang.com", "7654321", "0.05", "1000000", "100"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["postasset", "terry@yang.com", "1234567", "0.05", "1000000", "100"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["unpostasset", "terry@yang.com", "1234567"]}' -C myc
+peer chaincode invoke -n mortgage -c '{"Args":["addpayment", "terry@yang.com", "5331887545685964","{\"Paymenttype\":\"Credit card\", \"addr\":{\"addr1\":\"123 Corporate\",\"addr2\":\"apt.1815\", \"city\":\"Jax\"}}"]}' -C myc

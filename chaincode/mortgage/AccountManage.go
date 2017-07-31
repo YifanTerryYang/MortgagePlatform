@@ -3,8 +3,9 @@ package main
 import(
 	"bytes"
 	"encoding/json"
-	"golang.org/x/crypto/bcrypt"
+	//"golang.org/x/crypto/bcrypt"
 	"errors"
+	"fmt"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -16,11 +17,30 @@ func CheckUser(APIstub shim.ChaincodeStubInterface, username string) (bool, []by
 	}
 
 	val,_ := APIstub.GetState(userkey)
+	fmt.Println("CheckUser, val is " + string(val))
 	if val != nil {
 		return true, val
 	}
 
 	return false, nil
+}
+
+func getUserInfo(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
+	username := args[0]
+	check, userval := CheckUser(APIstub, username)
+	if !check {   // if user exists
+		return nil, errors.New("User not exists or password incorrect")
+	}
+
+	user := User{}
+	json.Unmarshal(userval, &user)
+	
+	userinfoAsbytes, _ := json.Marshal(user.Info)
+
+	return userinfoAsbytes, nil
 }
 
 func createNewUser(APIstub shim.ChaincodeStubInterface, args []string) error {
@@ -31,7 +51,8 @@ func createNewUser(APIstub shim.ChaincodeStubInterface, args []string) error {
 	username := args[0]
 	password := args[1]
 	if password == "" {return errors.New("Password is empty")}
-	hashedPasswordAsbytes, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
+	//hashedPasswordAsbytes, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
+	hashedPasswordAsbytes := []byte(password)
 	userinfo := args[2]
 
 	// Check if user exists
@@ -60,7 +81,8 @@ func login(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	username := args[0]
 	password := args[1]
 	if password == "" {return nil, errors.New("Password is empty")}
-	hashedPasswordAsbytes,_ := bcrypt.GenerateFromPassword([]byte(password), 10)
+	//hashedPasswordAsbytes,_ := bcrypt.GenerateFromPassword([]byte(password), 10)
+	hashedPasswordAsbytes := []byte(password)
 
 	// Check if user exists
 	check, userval := CheckUser(APIstub, username)
@@ -70,7 +92,13 @@ func login(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	user := User{}
 	json.Unmarshal(userval, &user)
-	if bytes.Compare(hashedPasswordAsbytes, user.Password) != 0 {return nil, errors.New("User not exists or password incorrect")}
+	fmt.Println(hashedPasswordAsbytes)
+	fmt.Println(user.Password)
+	fmt.Println(string(hashedPasswordAsbytes))
+	fmt.Println(string(user.Password))
+	if bytes.Compare(hashedPasswordAsbytes, user.Password) != 0 {
+		return nil, errors.New("User not exists or password incorrect")
+	}
 	userinfoAsbytes, _ := json.Marshal(user.Info)
 
 	return userinfoAsbytes, nil
@@ -92,16 +120,16 @@ func updateUser(APIstub shim.ChaincodeStubInterface, args []string) error {
 	newuserinfo := UserInfo{}
 	json.Unmarshal(useroldval, &olduserinfo)
 	json.Unmarshal([]byte(usernewinfo),&newuserinfo)
-	if newuserinfo.Fname != "" {olduserinfo.Info.Fname = newuserinfo.Fname}
-	if newuserinfo.Lname != "" {olduserinfo.Info.Lname = newuserinfo.Lname}
-	if newuserinfo.Gender != "" {olduserinfo.Info.Gender = newuserinfo.Gender}
+	olduserinfo.Info.Fname = newuserinfo.Fname
+	olduserinfo.Info.Lname = newuserinfo.Lname
+	olduserinfo.Info.Gender = newuserinfo.Gender
 	// update address
-	if newuserinfo.Addr.Address1 != "" {olduserinfo.Info.Addr.Address1 = newuserinfo.Addr.Address1}
-	if newuserinfo.Addr.Address2 != "" {olduserinfo.Info.Addr.Address2 = newuserinfo.Addr.Address2}
-	if newuserinfo.Addr.Apt != "" {olduserinfo.Info.Addr.Apt = newuserinfo.Addr.Apt}
-	if newuserinfo.Addr.City != "" {olduserinfo.Info.Addr.City = newuserinfo.Addr.City}
-	if newuserinfo.Addr.State != "" {olduserinfo.Info.Addr.State = newuserinfo.Addr.State}
-	if newuserinfo.Addr.Zip != "" {olduserinfo.Info.Addr.Zip = newuserinfo.Addr.Zip}
+	olduserinfo.Info.Addr.Address1 = newuserinfo.Addr.Address1
+	olduserinfo.Info.Addr.Address2 = newuserinfo.Addr.Address2
+	olduserinfo.Info.Addr.Apt = newuserinfo.Addr.Apt
+	olduserinfo.Info.Addr.City = newuserinfo.Addr.City
+	olduserinfo.Info.Addr.State = newuserinfo.Addr.State
+	olduserinfo.Info.Addr.Zip = newuserinfo.Addr.Zip
 
 	olduserinfoByte,_ := json.Marshal(olduserinfo)  // convert to byte stream after update
 	userkey, err := GetUserKey(APIstub,username)

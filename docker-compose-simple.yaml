@@ -61,6 +61,7 @@ services:
         - ./msp:/etc/hyperledger/msp
         - ./chaincode:/opt/gopath/src/chaincodedev/chaincode
         - ./:/opt/gopath/src/chaincodedev/
+        - /home/yifan/CapProject:/opt/gopath
     depends_on:
       - orderer
       - peer

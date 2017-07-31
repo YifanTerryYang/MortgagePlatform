@@ -16,7 +16,7 @@ type Address struct {
 	Apt      string `json:"apt"`
 	City     string `json:"city"`
 	State    string `json:"state"`
-	Zip      string `json:'zip"`
+	Zip      string `json:"zip"`
 }
 
 type Asset struct {

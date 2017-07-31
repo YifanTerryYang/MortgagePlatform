@@ -9,4 +9,6 @@
 tmp/
 
 #### Above combination with ignore all files without extension ####
-
+invoke.js
+query.js
+node_modules/

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"errors"
 	"strconv"
+	"fmt"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -34,6 +35,20 @@ func checkAsset(APIstub shim.ChaincodeStubInterface, compositeAssetKey string) (
 	return true, resultAsset
 }
 
+func getAssetInfo(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
+	assetid := args[0]
+	compositeAssetKey, _ := GetAssetKey(APIstub, assetid)
+	check, asset := checkAsset(APIstub, compositeAssetKey)
+	if !check {   // if user exists
+		return nil, errors.New("User not exists or password incorrect")
+	}
+	assetvalAsbytes, _ := json.Marshal(asset)
+	return assetvalAsbytes, nil
+}
+
 // args: username and assetid
 func postAsset(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 5 { return []byte{}, errors.New("PostAsset, args should be 5 --- ")}
@@ -49,7 +64,10 @@ func postAsset(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, erro
 	if err := json.Unmarshal(assetval, &asset); err != nil {
 		return []byte{}, errors.New("postAsset --- " + err.Error())
 	}
-	if asset.Owned != user {
+	fmt.Println(asset.Owned)
+	fmt.Println(user)
+	compositeUserKey, _ := GetUserKey(APIstub, user)
+	if asset.Owned != compositeUserKey {
 		return []byte{}, errors.New("PostAsset, asset not owned by this user --- ")
 	}
 	asset.Interestrate, _ = strconv.ParseFloat(interestrate, 32)
@@ -80,7 +98,8 @@ func unpostAsset(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, er
 	if err := json.Unmarshal(assetval, &asset); err != nil {
 		return []byte{}, err
 	}
-	if asset.Owned != user {
+	compositeUserKey, _ := GetUserKey(APIstub, user)
+	if asset.Owned != compositeUserKey {
 		return []byte{}, errors.New("UnpostAsset, asset not owned by this user --- ")
 	}
 	if len(asset.Buyerspercent) > 0 {

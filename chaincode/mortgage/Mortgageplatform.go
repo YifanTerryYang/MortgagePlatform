@@ -25,6 +25,10 @@ func (s *Mortgageplatform) Invoke(APIstub shim.ChaincodeStubInterface) sc.Respon
 	// Route to the appropriate handler function to interact with the ledger appropriately
 	if function == "createnewuser" {
 		return s.CreateNewUser(APIstub, args)
+	} else if function == "getuserinfo" {
+		return s.GetUserInfo(APIstub, args)
+	} else if function == "getassetinfo" {
+		return s.GetAssetInfo(APIstub, args)
 	} else if function == "updateuser" {
 		return s.UpdateUser(APIstub, args)
 	} else if function == "login" {
@@ -35,6 +39,16 @@ func (s *Mortgageplatform) Invoke(APIstub shim.ChaincodeStubInterface) sc.Respon
 		return s.AddPayment(APIstub, args)
 	} else if function == "getpostedassets" {
 		return s.GetPostedAssets(APIstub)
+	} else if function == "buyasset" {
+		return s.BuyAsset(APIstub, args)
+	} else if function == "postasset" {
+		return s.PostAsset(APIstub, args)
+	} else if function == "unpostasset" {
+		return s.UnpostAsset(APIstub, args)
+	} else if function == "hw" {
+		return shim.Success([]byte("hello world!"))
+	} else if function == "err" {
+		return shim.Error("error")
 	}
 
 	return shim.Error("Invalid Smart Contract function name.")
@@ -51,7 +65,17 @@ func (s *Mortgageplatform) Login(APIstub shim.ChaincodeStubInterface, args []str
 	return shim.Success(res)
 }
 
+func (s *Mortgageplatform) GetUserInfo(APIstub shim.ChaincodeStubInterface, args []string) sc.Response{
+	resAsbyte, err := getUserInfo(APIstub, args)
+	if err != nil { return shim.Error(err.Error()) }
+	return shim.Success(resAsbyte)
+}
 
+func (s *Mortgageplatform) GetAssetInfo(APIstub shim.ChaincodeStubInterface, args []string) sc.Response{
+	resAsbyte, err := getAssetInfo(APIstub, args)
+	if err != nil { return shim.Error(err.Error()) }
+	return shim.Success(resAsbyte)
+}
 /*
  * Call AccountManage.go ---> createNewUser
  * Args: 1. username
@@ -81,7 +105,7 @@ func (s *Mortgageplatform) AddAsset(APIstub shim.ChaincodeStubInterface, args []
 
 	userid := args[0]
 	assetkey := args[1]
-	assetval := args[2]
+	assetval := args[2]   // 'desc' needed only
 	assetcompositeKey, _ := GetAssetKey(APIstub, assetkey)
 	assetexist, _ := checkAsset(APIstub, assetcompositeKey)
 	if assetexist { return shim.Error("AddAsset, asset exists already --- ") }
