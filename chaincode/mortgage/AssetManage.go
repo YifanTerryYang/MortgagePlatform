@@ -36,16 +36,26 @@ func checkAsset(APIstub shim.ChaincodeStubInterface, compositeAssetKey string) (
 }
 
 func getAssetInfo(APIstub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	if len(args) == 0 {
+		return nil, nil
 	}
-	assetid := args[0]
-	compositeAssetKey, _ := GetAssetKey(APIstub, assetid)
-	check, asset := checkAsset(APIstub, compositeAssetKey)
-	if !check {   // if user exists
-		return nil, errors.New("User not exists or password incorrect")
+	//var assetids []string
+	//json.Unmarshal([]byte(args[0]), &assetids)
+	//assetids := strings.Split(args[0], "|")
+	length := len(args)
+	if length < 1 {
+		return nil, nil
 	}
-	assetvalAsbytes, _ := json.Marshal(asset)
+	var assetslist = make([]Asset, length)
+	for i := 0; i < length; i++ {
+		assetinfoAsbytes, _ := APIstub.GetState(args[i])
+		assettmp := Asset{}
+		json.Unmarshal(assetinfoAsbytes, &assettmp)
+		assetslist[i] = assettmp
+	}
+
+	assetvalAsbytes, _ := json.Marshal(assetslist)
+
 	return assetvalAsbytes, nil
 }
 
